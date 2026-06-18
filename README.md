@@ -67,6 +67,13 @@ src/
 
 ---
 
+## 👥 Contributors
+
+- **Guhong_X** — Project creator & developer
+- **DeepSeek** — AI assistant (architecture design, code generation, review)
+
+---
+
 ## 📄 License
 
 MIT
