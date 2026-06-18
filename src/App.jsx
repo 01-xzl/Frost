@@ -2,6 +2,8 @@ import { useRef, useCallback, useMemo } from 'react'
 import useTodos from './hooks/useTodos'
 import useToast from './hooks/useToast'
 import useTheme from './hooks/useTheme'
+import useDailyGoal from './hooks/useDailyGoal'
+import ProgressRing from './components/ProgressRing'
 import TodoInput from './components/TodoInput'
 import SearchBar from './components/SearchBar'
 import StatsBar from './components/StatsBar'
@@ -18,6 +20,7 @@ import { groupByDate } from './utils/dateGrouping'
 export default function App() {
   const {
     filtered,
+    todos,
     search,
     setSearch,
     editingId,
@@ -42,6 +45,7 @@ export default function App() {
 
   const { toasts, toast, dismissToast, handleAction } = useToast()
   const { theme, toggleTheme } = useTheme()
+  const { goal, setGoal, todayCreated, todayDone, progress } = useDailyGoal(todos)
 
   const addInputRef = useRef(null)
   const searchInputRef = useRef(null)
@@ -132,9 +136,12 @@ export default function App() {
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
         {/* Header */}
-        <h1 className="text-3xl font-light tracking-wide text-center mb-6 select-none">
-          ✦ Todo
-        </h1>
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <ProgressRing progress={progress} />
+          <h1 className="text-3xl font-light tracking-wide select-none">
+            ✦ Todo
+          </h1>
+        </div>
 
         {/* Add input */}
         <TodoInput ref={addInputRef} onAdd={add} />
@@ -150,6 +157,10 @@ export default function App() {
           total={totalCount}
           done={doneCount}
           onClearCompleted={clearCompleted}
+          todayDone={todayDone}
+          todayCreated={todayCreated}
+          goal={goal}
+          onGoalChange={setGoal}
         />
 
         {/* List */}
