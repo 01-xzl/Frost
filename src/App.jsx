@@ -3,7 +3,11 @@ import useTodos from './hooks/useTodos'
 import useToast from './hooks/useToast'
 import useTheme from './hooks/useTheme'
 import useDailyGoal from './hooks/useDailyGoal'
+import useTimer from './hooks/useTimer'
+import useAudio from './hooks/useAudio'
 import ProgressRing from './components/ProgressRing'
+import PomodoroTimer from './components/PomodoroTimer'
+import AmbientPlayer from './components/AmbientPlayer'
 import TodoInput from './components/TodoInput'
 import SearchBar from './components/SearchBar'
 import StatsBar from './components/StatsBar'
@@ -46,6 +50,31 @@ export default function App() {
   const { toasts, toast, dismissToast, handleAction } = useToast()
   const { theme, toggleTheme } = useTheme()
   const { goal, setGoal, todayCreated, todayDone, progress } = useDailyGoal(todos)
+
+  // Request notification permission (called on first timer start)
+  const requestNotification = useCallback(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  // Pomodoro — notify on session end
+  const handleSessionEnd = useCallback((completedMode) => {
+    const label = completedMode === 'focus' ? 'Focus done! Take a break ☕' : 'Break over! Back to work 🚀'
+    toast(label, { duration: 4000 })
+    if (Notification.permission === 'granted') {
+      new Notification('Frost', { body: label })
+    }
+  }, [toast])
+  const timer = useTimer(handleSessionEnd)
+
+  const handleStartTimer = useCallback(() => {
+    requestNotification()
+    timer.start()
+  }, [requestNotification, timer.start])
+
+  // Ambient sounds
+  const audio = useAudio()
 
   const addInputRef = useRef(null)
   const searchInputRef = useRef(null)
@@ -136,11 +165,36 @@ export default function App() {
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
         {/* Header */}
-        <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="flex items-center justify-center gap-4 mb-4">
           <ProgressRing progress={progress} />
           <h1 className="text-3xl font-light tracking-wide select-none">
-            ✦ Todo
+            ✦ Frost
           </h1>
+        </div>
+
+        {/* Pomodoro */}
+        <div className="mb-5">
+          <PomodoroTimer
+            mode={timer.mode}
+            remaining={timer.remaining}
+            progress={timer.progress}
+            isRunning={timer.isRunning}
+            isPaused={timer.isPaused}
+            isIdle={timer.isIdle}
+            onStart={handleStartTimer}
+            onPause={timer.pause}
+            onReset={timer.reset}
+            onSkip={timer.skip}
+          />
+        </div>
+
+        {/* Ambient sounds */}
+        <div className="mb-5">
+          <AmbientPlayer
+            active={audio.active}
+            sounds={audio.sounds}
+            onToggle={audio.toggle}
+          />
         </div>
 
         {/* Add input */}
