@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo } from 'react'
+import { useRef, useCallback, useMemo, useState } from 'react'
 import useTodos from './hooks/useTodos'
 import useToast from './hooks/useToast'
 import useTheme from './hooks/useTheme'
@@ -7,11 +7,15 @@ import useTimer from './hooks/useTimer'
 import useAudio from './hooks/useAudio'
 import useQuotes from './hooks/useQuotes'
 import useStreak from './hooks/useStreak'
+import useStickies from './hooks/useStickies'
 import ProgressRing from './components/ProgressRing'
 import PomodoroTimer from './components/PomodoroTimer'
 import AmbientPlayer from './components/AmbientPlayer'
 import QuoteDisplay from './components/QuoteDisplay'
 import StreakBadge from './components/StreakBadge'
+import ViewSwitcher from './components/ViewSwitcher'
+import StickyBoard from './components/StickyBoard'
+import StatsPanel from './components/StatsPanel'
 import TodoInput from './components/TodoInput'
 import SearchBar from './components/SearchBar'
 import StatsBar from './components/StatsBar'
@@ -85,6 +89,12 @@ export default function App() {
 
   // Streak
   const streak = useStreak(todayDone)
+
+  // Sticky notes
+  const { stickies, add: addSticky, update: updateSticky, move: moveSticky, remove: removeSticky } = useStickies()
+
+  // View switching
+  const [view, setView] = useState('tasks')
 
   const addInputRef = useRef(null)
   const searchInputRef = useRef(null)
@@ -175,94 +185,122 @@ export default function App() {
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
         {/* Header */}
-        <div className="flex items-center justify-center gap-4 mb-4">
+        <div className="flex items-center justify-center gap-4 mb-3">
           <ProgressRing progress={progress} />
           <h1 className="text-3xl font-light tracking-wide select-none">
             ✦ Frost
           </h1>
         </div>
 
-        {/* Pomodoro */}
-        <div className="mb-5">
-          <PomodoroTimer
-            mode={timer.mode}
-            remaining={timer.remaining}
-            progress={timer.progress}
-            isRunning={timer.isRunning}
-            isPaused={timer.isPaused}
-            isIdle={timer.isIdle}
-            onStart={handleStartTimer}
-            onPause={timer.pause}
-            onReset={timer.reset}
-            onSkip={timer.skip}
-          />
-        </div>
+        {/* View switcher */}
+        <ViewSwitcher active={view} onChange={setView} />
 
-        {/* Ambient sounds */}
-        <div className="mb-5">
-          <AmbientPlayer
-            active={audio.active}
-            sounds={audio.sounds}
-            onToggle={audio.toggle}
-          />
-        </div>
+        {/* ===== Tasks View ===== */}
+        {view === 'tasks' && (
+          <>
+            {/* Pomodoro */}
+            <div className="mb-5">
+              <PomodoroTimer
+                mode={timer.mode}
+                remaining={timer.remaining}
+                progress={timer.progress}
+                isRunning={timer.isRunning}
+                isPaused={timer.isPaused}
+                isIdle={timer.isIdle}
+                onStart={handleStartTimer}
+                onPause={timer.pause}
+                onReset={timer.reset}
+                onSkip={timer.skip}
+              />
+            </div>
 
-        {/* Add input */}
-        <TodoInput ref={addInputRef} onAdd={add} />
+            {/* Ambient sounds */}
+            <div className="mb-5">
+              <AmbientPlayer
+                active={audio.active}
+                sounds={audio.sounds}
+                onToggle={audio.toggle}
+              />
+            </div>
 
-        {/* Search */}
-        <SearchBar ref={searchInputRef} value={search} onChange={setSearch} />
+            {/* Add input */}
+            <TodoInput ref={addInputRef} onAdd={add} />
 
-        {/* Category filter */}
-        <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
+            {/* Search */}
+            <SearchBar ref={searchInputRef} value={search} onChange={setSearch} />
 
-        {/* Stats + Clear completed */}
-        <StatsBar
-          total={totalCount}
-          done={doneCount}
-          onClearCompleted={clearCompleted}
-          todayDone={todayDone}
-          todayCreated={todayCreated}
-          goal={goal}
-          onGoalChange={setGoal}
-        />
+            {/* Category filter */}
+            <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
 
-        {/* Streak badge */}
-        <div className="mb-3">
-          <StreakBadge
-            current={streak.current}
-            longest={streak.longest}
-            todayDone={streak.todayDone}
-          />
-        </div>
-
-        {/* List */}
-        {filtered.length === 0 ? (
-          <ul className="space-y-2 max-h-80 overflow-y-auto pr-1">
-            <EmptyState
-              hasTodos={totalCount > 0}
-              searchActive={search.trim().length > 0 || activeCategory !== null}
+            {/* Stats + Clear completed */}
+            <StatsBar
+              total={totalCount}
+              done={doneCount}
+              onClearCompleted={clearCompleted}
+              todayDone={todayDone}
+              todayCreated={todayCreated}
+              goal={goal}
+              onGoalChange={setGoal}
             />
-          </ul>
-        ) : (
-          <TodoList
-            items={groupedItems ?? filtered}
-            renderItem={renderItem}
-            grouped={!!groupedItems}
+
+            {/* Streak badge */}
+            <div className="mb-3">
+              <StreakBadge
+                current={streak.current}
+                longest={streak.longest}
+                todayDone={streak.todayDone}
+              />
+            </div>
+
+            {/* List */}
+            {filtered.length === 0 ? (
+              <ul className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                <EmptyState
+                  hasTodos={totalCount > 0}
+                  searchActive={search.trim().length > 0 || activeCategory !== null}
+                />
+              </ul>
+            ) : (
+              <TodoList
+                items={groupedItems ?? filtered}
+                renderItem={renderItem}
+                grouped={!!groupedItems}
+              />
+            )}
+
+            {/* Quote of the day */}
+            <QuoteDisplay quote={quote} onRefresh={refreshQuote} />
+          </>
+        )}
+
+        {/* ===== Notes View ===== */}
+        {view === 'notes' && (
+          <StickyBoard
+            stickies={stickies}
+            onUpdate={updateSticky}
+            onMove={moveSticky}
+            onDelete={removeSticky}
+            onAdd={addSticky}
           />
         )}
 
-        {/* Quote of the day */}
-        <QuoteDisplay quote={quote} onRefresh={refreshQuote} />
+        {/* ===== Stats View ===== */}
+        {view === 'stats' && (
+          <StatsPanel todos={todos} />
+        )}
       </div>
 
-      {/* Footer: Export / Import */}
-      <FooterMenu onExport={handleExport} onImport={handleImport} />
+      {/* Footer: Export / Import (tasks only) */}
+      {view === 'tasks' && (
+        <>
+          <FooterMenu onExport={handleExport} onImport={handleImport} />
 
-      {/* Hint */}
-      <p className="text-center text-white/40 text-xs mt-3 select-none">
-        Sorted by priority · Double-click to edit · Tasks grouped by date
-      </p>
+          {/* Hint */}
+          <p className="text-center text-white/40 text-xs mt-3 select-none">
+            Sorted by priority · Double-click to edit · Tasks grouped by date
+          </p>
+        </>
+      )}
     </div>
   )
 }
