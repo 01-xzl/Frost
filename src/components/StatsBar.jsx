@@ -1,25 +1,21 @@
+import useLocale from '../hooks/useLocale'
+
 export default function StatsBar({
-  total,
-  done,
-  onClearCompleted,
-  todayDone,
-  todayCreated,
-  goal,
-  onGoalChange,
+  total, done, onClearCompleted,
+  todayDone, todayCreated, goal, onGoalChange,
 }) {
+  const { t } = useLocale()
   const left = total - done
 
   return (
     <div className="space-y-2 mb-4 px-1">
-      {/* Daily goal row */}
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-white/60">
-          <span>Today</span>
+          <span>{t('today')}</span>
           <span className="text-white/80 font-medium">
             {todayDone}/{goal}
           </span>
-          <span className="text-white/30">done</span>
-          {/* Mini inline goal setter */}
+          <span className="text-white/30">{t('done')}</span>
           <input
             type="number"
             min={1}
@@ -30,29 +26,28 @@ export default function StatsBar({
                        text-white/60 text-xs py-0.5 outline-none
                        focus:border-white/30 transition-colors
                        [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            title="Daily goal"
+            title={t('dailyGoal')}
           />
         </div>
         {todayCreated > 0 && (
           <span className="text-white/30">
-            {todayCreated} created
+            {todayCreated} {t('created')}
           </span>
         )}
       </div>
 
-      {/* Total row */}
       <div className="flex items-center justify-between text-xs text-white/40">
         <div className="flex gap-3">
-          <span>{total} total</span>
-          <span>{done} done</span>
-          <span>{left} left</span>
+          <span>{total} {t('total')}</span>
+          <span>{done} {t('done')}</span>
+          <span>{left} {t('left')}</span>
         </div>
         {done > 0 && (
           <button
             onClick={onClearCompleted}
             className="text-white/40 hover:text-white/70 transition-colors cursor-pointer"
           >
-            Clear done
+            {t('clearDone')}
           </button>
         )}
       </div>

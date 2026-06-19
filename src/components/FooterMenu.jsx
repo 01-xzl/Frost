@@ -1,16 +1,18 @@
 import { useRef } from 'react'
+import useLocale from '../hooks/useLocale'
 
 export default function FooterMenu({ onExport, onImport }) {
   const fileRef = useRef(null)
+  const { t } = useLocale()
 
   return (
     <div className="flex justify-center gap-4 mt-4">
       <button
         onClick={onExport}
         className="text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer"
-        title="Download all todos as JSON"
+        title={t('exportTitle')}
       >
-        Export
+        {t('export')}
       </button>
 
       <span className="text-white/20">·</span>
@@ -18,9 +20,9 @@ export default function FooterMenu({ onExport, onImport }) {
       <button
         onClick={() => fileRef.current?.click()}
         className="text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer"
-        title="Import todos from JSON file"
+        title={t('importTitle')}
       >
-        Import
+        {t('import')}
       </button>
 
       <input
@@ -33,7 +35,6 @@ export default function FooterMenu({ onExport, onImport }) {
           if (file) {
             onImport(file)
           }
-          // Reset so the same file can be re-imported
           e.target.value = ''
         }}
       />

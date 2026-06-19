@@ -4,7 +4,7 @@ const FOCUS_MINUTES = 25
 const BREAK_MINUTES = 5
 const STATES = { IDLE: 'idle', RUNNING: 'running', PAUSED: 'paused' }
 
-let workerCode = `
+const workerCode = `
 let timerId = null
 let endAt = null
 
@@ -37,54 +37,42 @@ function createWorker() {
 
 export default function useTimer(onSessionEnd) {
   const [state, setState] = useState(STATES.IDLE)
-  const [mode, setMode] = useState('focus') // 'focus' | 'break'
+  const [mode, setMode] = useState('focus')
   const [remaining, setRemaining] = useState(FOCUS_MINUTES * 60_000)
   const [totalDuration, setTotalDuration] = useState(FOCUS_MINUTES * 60_000)
   const workerRef = useRef(null)
+
+  // Refs so worker onmessage always calls latest handlers
+  const modeRef = useRef(mode)
+  modeRef.current = mode
+  const stateRef = useRef(state)
+  stateRef.current = state
   const onSessionEndRef = useRef(onSessionEnd)
   onSessionEndRef.current = onSessionEnd
 
-  const duration = mode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000
-
-  // Tick handler
-  const handleTick = useCallback((ms) => {
-    setRemaining(ms)
-  }, [])
-
-  const handleDone = useCallback(() => {
-    setState(STATES.IDLE)
-    const nextMode = mode === 'focus' ? 'break' : 'focus'
-    setMode(nextMode)
-    setRemaining(nextMode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000)
-    setTotalDuration(nextMode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000)
-    onSessionEndRef.current?.(mode)
-  }, [mode])
-
-  // Setup worker
+  // Setup worker once on mount — onmessage reads from refs
   useEffect(() => {
     const worker = createWorker()
     worker.onmessage = (e) => {
       const { type, remaining: ms } = e.data
-      if (type === 'tick') handleTick(ms)
-      if (type === 'done') handleDone()
+      if (type === 'tick') {
+        setRemaining(ms)
+      }
+      if (type === 'done') {
+        const currentMode = modeRef.current
+        setState(STATES.IDLE)
+        const nextMode = currentMode === 'focus' ? 'break' : 'focus'
+        setMode(nextMode)
+        setRemaining(nextMode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000)
+        setTotalDuration(nextMode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000)
+        onSessionEndRef.current?.(currentMode)
+      }
     }
     workerRef.current = worker
     return () => {
       worker.terminate()
-      URL.revokeObjectURL(worker._url)
     }
-  }, []) // mount only
-
-  // Restart worker when mode/mounted changes
-  useEffect(() => {
-    const worker = workerRef.current
-    if (!worker) return
-    // When idle and mode changes, update display
-    if (state === STATES.IDLE) {
-      setRemaining(mode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000)
-      setTotalDuration(mode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000)
-    }
-  }, [mode, state])
+  }, [])
 
   const start = useCallback(() => {
     const worker = workerRef.current
@@ -108,12 +96,12 @@ export default function useTimer(onSessionEnd) {
 
   const skip = useCallback(() => {
     workerRef.current?.postMessage({ type: 'stop' })
-    const nextMode = mode === 'focus' ? 'break' : 'focus'
+    const nextMode = modeRef.current === 'focus' ? 'break' : 'focus'
     setState(STATES.IDLE)
     setMode(nextMode)
     setRemaining(nextMode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000)
     setTotalDuration(nextMode === 'focus' ? FOCUS_MINUTES * 60_000 : BREAK_MINUTES * 60_000)
-  }, [mode])
+  }, [])
 
   const progress = 1 - remaining / (totalDuration || 1)
 

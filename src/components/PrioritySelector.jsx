@@ -1,6 +1,9 @@
+import useLocale from '../hooks/useLocale'
 import { PRIORITIES } from '../utils/defaults'
 
 export default function PrioritySelector({ value, onChange, compact = false }) {
+  const { t } = useLocale()
+
   return (
     <div className={`flex ${compact ? 'gap-1' : 'gap-2'}`}>
       {PRIORITIES.map((p) => (
@@ -9,7 +12,7 @@ export default function PrioritySelector({ value, onChange, compact = false }) {
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onChange(p.key)}
-          title={p.label}
+          title={t(p.key)}
           className={`rounded-full transition-all cursor-pointer
             ${compact ? 'w-3 h-3' : 'w-4 h-4'}
             ${p.color}

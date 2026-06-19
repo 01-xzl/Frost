@@ -8,6 +8,7 @@ import useAudio from './hooks/useAudio'
 import useQuotes from './hooks/useQuotes'
 import useStreak from './hooks/useStreak'
 import useStickies from './hooks/useStickies'
+import useLocale from './hooks/useLocale'
 import ProgressRing from './components/ProgressRing'
 import PomodoroTimer from './components/PomodoroTimer'
 import AmbientPlayer from './components/AmbientPlayer'
@@ -25,6 +26,7 @@ import TodoItem from './components/TodoItem'
 import EmptyState from './components/EmptyState'
 import ThemeToggle from './components/ThemeToggle'
 import FooterMenu from './components/FooterMenu'
+import LanguageSwitcher from './components/LanguageSwitcher'
 import Toast from './components/Toast'
 import { downloadJSON, parseImportedFile } from './utils/exportImport'
 import { groupByDate } from './utils/dateGrouping'
@@ -58,6 +60,7 @@ export default function App() {
   const { toasts, toast, dismissToast, handleAction } = useToast()
   const { theme, toggleTheme } = useTheme()
   const { goal, setGoal, todayCreated, todayDone, progress } = useDailyGoal(todos)
+  const { t } = useLocale()
 
   // Request notification permission (called on first timer start)
   const requestNotification = useCallback(() => {
@@ -68,12 +71,12 @@ export default function App() {
 
   // Pomodoro — notify on session end
   const handleSessionEnd = useCallback((completedMode) => {
-    const label = completedMode === 'focus' ? 'Focus done! Take a break ☕' : 'Break over! Back to work 🚀'
+    const label = completedMode === 'focus' ? t('focusDone') : t('breakDone')
     toast(label, { duration: 4000 })
     if (Notification.permission === 'granted') {
       new Notification('Frost', { body: label })
     }
-  }, [toast])
+  }, [toast, t])
   const timer = useTimer(handleSessionEnd)
 
   const handleStartTimer = useCallback(() => {
@@ -102,19 +105,20 @@ export default function App() {
   // Date grouping: only when not searching/filtering
   const groupedItems = useMemo(() => {
     if (search.trim() || activeCategory) return null
-    return groupByDate(filtered)
-  }, [filtered, search, activeCategory])
+    const dateKeys = { Today: 'dateToday', Yesterday: 'dateYesterday', 'This Week': 'dateThisWeek', Older: 'dateOlder' }
+    return groupByDate(filtered).map((g) => ({ ...g, label: t(dateKeys[g.label] || g.label) }))
+  }, [filtered, search, activeCategory, t])
 
   // Delete with toast + undo
   const handleDelete = useCallback((id) => {
     const removed = remove(id)
     if (removed) {
-      toast(`Deleted: "${removed.text}"`, {
+      toast(`${t('deleted')}"${removed.text}"`, {
         action: () => restore(removed),
-        actionLabel: 'Undo',
+        actionLabel: t('undo'),
       })
     }
-  }, [remove, restore, toast])
+  }, [remove, restore, toast, t])
 
   // Edit flow
   const handleEdit = useCallback((todo) => {
@@ -147,14 +151,15 @@ export default function App() {
       const imported = await parseImportedFile(file)
       const ok = importData(imported)
       if (ok) {
-        toast(`Imported ${imported.length} todo${imported.length > 1 ? 's' : ''}`, { duration: 2500 })
+        const msg = imported.length === 1 ? t('imported_singular') : t('imported_plural', { n: imported.length })
+        toast(msg, { duration: 2500 })
       } else {
-        toast('No valid todos found in file', { duration: 3000 })
+        toast(t('noValidTodos'), { duration: 3000 })
       }
     } catch (err) {
-      toast(err.message ?? 'Import failed', { duration: 3000 })
+      toast(err.message ?? t('importFailed'), { duration: 3000 })
     }
-  }, [importData, toast])
+  }, [importData, toast, t])
 
   const renderItem = useCallback((todo) => (
     <TodoItem
@@ -183,6 +188,7 @@ export default function App() {
       <div className="glass rounded-2xl p-8 text-white relative">
         {/* Theme toggle */}
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        <LanguageSwitcher />
 
         {/* Header */}
         <div className="flex items-center justify-center gap-4 mb-3">
@@ -297,7 +303,7 @@ export default function App() {
 
           {/* Hint */}
           <p className="text-center text-white/40 text-xs mt-3 select-none">
-            Sorted by priority · Double-click to edit · Tasks grouped by date
+            {t('hint')}
           </p>
         </>
       )}

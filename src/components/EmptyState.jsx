@@ -1,11 +1,15 @@
+import useLocale from '../hooks/useLocale'
+
 export default function EmptyState({ hasTodos, searchActive }) {
+  const { t } = useLocale()
+
   return (
     <li className="text-center text-white/40 text-sm py-6 select-none">
       {!hasTodos
-        ? 'Nothing yet — add one above ☝'
+        ? t('emptyNone')
         : searchActive
-          ? 'No match'
-          : 'All done! 🎉'}
+          ? t('emptyNoMatch')
+          : t('emptyAllDone')}
     </li>
   )
 }

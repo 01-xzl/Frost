@@ -1,15 +1,28 @@
+import useLocale from '../hooks/useLocale'
+
+const SOUND_KEYS = {
+  white: 'whiteNoise',
+  pink: 'pinkNoise',
+  brown: 'brownNoise',
+  rain: 'rain',
+  fire: 'campfire',
+}
+
+const ICONS = { white: '⊿', pink: '≈', brown: '≋', rain: '🌧', fire: '🔥' }
+
 export default function AmbientPlayer({ active, sounds, onToggle }) {
-  const entries = Object.entries(sounds)
+  const { t } = useLocale()
+  const entries = Object.keys(sounds)
 
   return (
     <div className="flex items-center justify-center gap-1">
-      {entries.map(([key, { label, icon }]) => {
+      {entries.map((key) => {
         const isActive = active === key
         return (
           <button
             key={key}
             onClick={() => onToggle(key)}
-            title={label}
+            title={t(SOUND_KEYS[key])}
             className={`w-9 h-9 rounded-full flex items-center justify-center
                         text-sm transition-all duration-200 cursor-pointer
                         ${isActive
@@ -17,7 +30,7 @@ export default function AmbientPlayer({ active, sounds, onToggle }) {
                           : 'bg-white/6 border border-white/10 text-white/40 hover:bg-white/12 hover:text-white/70'
                         }`}
           >
-            {icon}
+            {ICONS[key]}
           </button>
         )
       })}

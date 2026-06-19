@@ -1,15 +1,15 @@
-import { useRef, useCallback, useEffect } from 'react'
+import { useRef, useCallback } from 'react'
+import useLocale from '../hooks/useLocale'
 
 export default function StickyNote({ sticky, onUpdate, onMove, onDelete }) {
   const ref = useRef(null)
-  const dragRef = useRef(null)
   const posRef = useRef({ x: sticky.x, y: sticky.y })
+  const { t } = useLocale()
 
-  // Keep posRef in sync
   posRef.current = { x: sticky.x, y: sticky.y }
 
   const handlePointerDown = useCallback((e) => {
-    if (e.target.tagName === 'TEXTAREA') return // don't drag when editing
+    if (e.target.tagName === 'TEXTAREA') return
     e.preventDefault()
     const el = ref.current
     if (!el) return
@@ -56,7 +56,6 @@ export default function StickyNote({ sticky, onUpdate, onMove, onDelete }) {
       }}
       onPointerDown={handlePointerDown}
     >
-      {/* Delete button */}
       <button
         onClick={() => onDelete(sticky.id)}
         className="absolute top-1 right-2 text-white/30 hover:text-white/70
@@ -65,11 +64,10 @@ export default function StickyNote({ sticky, onUpdate, onMove, onDelete }) {
         ×
       </button>
 
-      {/* Editable text area */}
       <textarea
         value={sticky.text}
         onChange={(e) => onUpdate(sticky.id, e.target.value)}
-        placeholder="..."
+        placeholder={t('stickyPlaceholder')}
         rows={3}
         className="w-full bg-transparent text-white/75 text-xs resize-none
                    outline-none placeholder-white/20 leading-relaxed"

@@ -1,18 +1,19 @@
-const VIEWS = [
-  { key: 'tasks', label: 'Tasks', icon: '✓' },
-  { key: 'notes', label: 'Notes', icon: '📌' },
-  { key: 'stats', label: 'Stats', icon: '📊' },
-]
+import useLocale from '../hooks/useLocale'
+
+const VIEW_KEYS = ['tasks', 'notes', 'stats']
+const VIEW_ICONS = { tasks: '✓', notes: '📌', stats: '📊' }
 
 export default function ViewSwitcher({ active, onChange }) {
+  const { t } = useLocale()
+
   return (
     <div className="flex gap-1 mb-4">
-      {VIEWS.map((v) => {
-        const isActive = active === v.key
+      {VIEW_KEYS.map((key) => {
+        const isActive = active === key
         return (
           <button
-            key={v.key}
-            onClick={() => onChange(v.key)}
+            key={key}
+            onClick={() => onChange(key)}
             className={`flex-1 py-1.5 rounded-lg text-xs font-medium
                         transition-all duration-200 cursor-pointer
                         ${isActive
@@ -20,8 +21,8 @@ export default function ViewSwitcher({ active, onChange }) {
                           : 'bg-white/5 border border-white/8 text-white/35 hover:bg-white/8 hover:text-white/55'
                         }`}
           >
-            <span className="mr-1.5">{v.icon}</span>
-            {v.label}
+            <span className="mr-1.5">{VIEW_ICONS[key]}</span>
+            {t(key)}
           </button>
         )
       })}
