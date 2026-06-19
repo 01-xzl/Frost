@@ -26,7 +26,9 @@ import TodoItem from './components/TodoItem'
 import EmptyState from './components/EmptyState'
 import ThemeToggle from './components/ThemeToggle'
 import FooterMenu from './components/FooterMenu'
+import DashboardLayout from './components/DashboardLayout'
 import LanguageSwitcher from './components/LanguageSwitcher'
+import useViewport from './hooks/useViewport'
 import Toast from './components/Toast'
 import { downloadJSON, parseImportedFile } from './utils/exportImport'
 import { groupByDate } from './utils/dateGrouping'
@@ -98,6 +100,9 @@ export default function App() {
 
   // View switching
   const [view, setView] = useState('tasks')
+
+  // Viewport tracking
+  const { isWide } = useViewport()
 
   const addInputRef = useRef(null)
   const searchInputRef = useRef(null)
@@ -181,10 +186,94 @@ export default function App() {
     exitingIds,
   ])
 
+  // Extract content pieces for both layouts
+  const topContent = (
+    <>
+      <ViewSwitcher active={view} onChange={setView} />
+      {view === 'tasks' && (
+        <>
+          <TodoInput ref={addInputRef} onAdd={add} />
+          <SearchBar ref={searchInputRef} value={search} onChange={setSearch} />
+          <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
+        </>
+      )}
+    </>
+  )
+
+  const listContent = (
+    <>
+      {view === 'tasks' && (
+        filtered.length === 0 ? (
+          <ul className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            <EmptyState
+              hasTodos={totalCount > 0}
+              searchActive={search.trim().length > 0 || activeCategory !== null}
+            />
+          </ul>
+        ) : (
+          <TodoList
+            items={groupedItems ?? filtered}
+            renderItem={renderItem}
+            grouped={!!groupedItems}
+          />
+        )
+      )}
+      {view === 'notes' && (
+        <StickyBoard
+          stickies={stickies}
+          onUpdate={updateSticky}
+          onMove={moveSticky}
+          onDelete={removeSticky}
+          onAdd={addSticky}
+        />
+      )}
+      {view === 'stats' && (
+        <StatsPanel todos={todos} />
+      )}
+    </>
+  )
+
+  const bottomContent = (
+    <>
+      {view === 'tasks' && (
+        <>
+          <FooterMenu onExport={handleExport} onImport={handleImport} />
+          <p className="text-center text-white/40 text-xs mt-3 select-none">
+            {t('hint')}
+          </p>
+        </>
+      )}
+    </>
+  )
+
   return (
-    <div className="w-full max-w-lg">
+    <div className={isWide ? 'w-full' : 'w-full max-w-lg'}>
       <Toast toasts={toasts} onDismiss={dismissToast} onAction={handleAction} />
 
+      {isWide ? (
+        <DashboardLayout
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          progress={progress}
+          timer={timer}
+          onStartTimer={handleStartTimer}
+          audio={audio}
+          quote={quote}
+          onRefreshQuote={refreshQuote}
+          streak={streak}
+          totalCount={totalCount}
+          doneCount={doneCount}
+          todayDone={todayDone}
+          todayCreated={todayCreated}
+          goal={goal}
+          onGoalChange={setGoal}
+          onClearCompleted={clearCompleted}
+          topContent={topContent}
+          listContent={listContent}
+          bottomContent={bottomContent}
+        />
+      ) : (
+      <>
       <div className="glass rounded-2xl p-8 text-white relative">
         {/* Theme toggle */}
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
@@ -306,6 +395,8 @@ export default function App() {
             {t('hint')}
           </p>
         </>
+      )}
+      </>
       )}
     </div>
   )
