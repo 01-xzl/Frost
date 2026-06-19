@@ -5,9 +5,13 @@ import useTheme from './hooks/useTheme'
 import useDailyGoal from './hooks/useDailyGoal'
 import useTimer from './hooks/useTimer'
 import useAudio from './hooks/useAudio'
+import useQuotes from './hooks/useQuotes'
+import useStreak from './hooks/useStreak'
 import ProgressRing from './components/ProgressRing'
 import PomodoroTimer from './components/PomodoroTimer'
 import AmbientPlayer from './components/AmbientPlayer'
+import QuoteDisplay from './components/QuoteDisplay'
+import StreakBadge from './components/StreakBadge'
 import TodoInput from './components/TodoInput'
 import SearchBar from './components/SearchBar'
 import StatsBar from './components/StatsBar'
@@ -75,6 +79,12 @@ export default function App() {
 
   // Ambient sounds
   const audio = useAudio()
+
+  // Quote of the day
+  const { quote, refresh: refreshQuote } = useQuotes()
+
+  // Streak
+  const streak = useStreak(todayDone)
 
   const addInputRef = useRef(null)
   const searchInputRef = useRef(null)
@@ -217,6 +227,15 @@ export default function App() {
           onGoalChange={setGoal}
         />
 
+        {/* Streak badge */}
+        <div className="mb-3">
+          <StreakBadge
+            current={streak.current}
+            longest={streak.longest}
+            todayDone={streak.todayDone}
+          />
+        </div>
+
         {/* List */}
         {filtered.length === 0 ? (
           <ul className="space-y-2 max-h-80 overflow-y-auto pr-1">
@@ -232,6 +251,9 @@ export default function App() {
             grouped={!!groupedItems}
           />
         )}
+
+        {/* Quote of the day */}
+        <QuoteDisplay quote={quote} onRefresh={refreshQuote} />
       </div>
 
       {/* Footer: Export / Import */}
